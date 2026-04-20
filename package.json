@@ -1,0 +1,50 @@
+{
+    "name": "create-react-shadcn-kit",
+    "version": "0.1.0",
+    "description": "Create a React (Vite) app with shadcn/ui pre-integrated — zero config.",
+    "keywords": [
+        "react",
+        "vite",
+        "shadcn",
+        "shadcn-ui",
+        "cli",
+        "scaffold",
+        "starter",
+        "create-react-app",
+        "create-vite",
+        "tailwind",
+        "redux-toolkit",
+        "zustand"
+    ],
+    "author": "Nikunj Sonigara <nikunjsonigara987@gmail.com>",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/NikunjSonigara/create-react-shadcn-kit.git"
+    },
+    "homepage": "https://github.com/NikunjSonigara/create-react-shadcn-kit#readme",
+    "bugs": {
+        "url": "https://github.com/NikunjSonigara/create-react-shadcn-kit/issues"
+    },
+    "type": "module",
+    "bin": {
+        "create-react-shadcn-kit": "bin/index.js"
+    },
+    "files": [
+        "bin",
+        "src",
+        "README.md",
+        "LICENSE"
+    ],
+    "engines": {
+        "node": ">=18.17.0"
+    },
+    "scripts": {
+        "start": "node bin/index.js",
+        "test:local": "node bin/index.js test-app --yes"
+    },
+    "dependencies": {
+        "picocolors": "^1.1.1",
+        "prompts": "^2.4.2"
+    }
+}
