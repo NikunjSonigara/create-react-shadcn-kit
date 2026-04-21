@@ -46,16 +46,14 @@ export async function scaffold(config) {
     console.log(pc.cyan("◆") + " Initializing shadcn/ui...");
     console.log();
 
-    const shadcnRunner = runnerFor(config.packageManager);
-
-    await run(shadcnRunner.cmd, [...shadcnRunner.args, "shadcn@latest", "init", "--yes", "--defaults"], { cwd: projectPath });
+    await run("npx", ["--yes", "shadcn@latest", "init", "--yes", "--defaults"], { cwd: projectPath });
 
     if (config.components.length > 0) {
         console.log();
         console.log(pc.cyan("◆") + ` Adding components: ${pc.dim(config.components.join(", "))}`);
         console.log();
 
-        await run(shadcnRunner.cmd, [...shadcnRunner.args, "shadcn@latest", "add", ...config.components, "--yes"], { cwd: projectPath });
+        await run("npx", ["--yes", "shadcn@latest", "add", ...config.components, "--yes"], { cwd: projectPath });
     }
 
     if (config.state === "redux") {
@@ -404,10 +402,7 @@ async function setupHusky(projectPath, config) {
         await run("git", ["init"], { cwd: projectPath });
     }
 
-    const runner = runnerFor(config.packageManager);
-    await run(runner.cmd, [...runner.args, "husky", "install"], {
-        cwd: projectPath,
-    });
+    await run("npx", ["husky", "install"], { cwd: projectPath });
 
     await run("git", ["config", "core.hooksPath", ".husky"], { cwd: projectPath });
 
@@ -455,6 +450,7 @@ ${hookCmd}
         "package-lock.json",
         "pnpm-lock.yaml",
         "yarn.lock",
+        "bun.lock",
         "bun.lockb",
         "",
     ].join("\n");
@@ -489,16 +485,3 @@ function installerFor(pm, dev = true) {
     }
 }
 
-function runnerFor(pm) {
-    switch (pm) {
-        case "pnpm":
-            return { cmd: "pnpm", args: ["dlx"] };
-        case "yarn":
-            return { cmd: "yarn", args: ["dlx"] };
-        case "bun":
-            return { cmd: "bunx", args: [] };
-        case "npm":
-        default:
-            return { cmd: "npx", args: [] };
-    }
-}
