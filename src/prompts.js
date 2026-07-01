@@ -28,7 +28,20 @@ const onCancel = () => {
     process.exit(1);
 };
 
+function assertValidName(name) {
+    if (!isValidProjectName(name)) {
+        throw new Error(
+            `Invalid project name: "${name}". Use letters, numbers, dashes, dots, ` +
+                `tildes or underscores (optionally an npm scope) — no path separators.`
+        );
+    }
+}
+
 export async function promptConfig(args) {
+    // A name passed on the CLI bypasses the interactive prompt's validation,
+    // so guard it here before it ever reaches path.resolve()/spawn().
+    if (args.projectName !== undefined) assertValidName(args.projectName);
+
     if (args.yes) {
         return {
             projectName: args.projectName || "my-app",
