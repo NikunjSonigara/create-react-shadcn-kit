@@ -1,7 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { parseArgs, isValidProjectName } from "../src/utils.js";
-import { aliasPrefixFor } from "../src/scaffold.js";
+import { aliasPrefixFor, writePnpmBuildConfig } from "../src/scaffold.js";
 import { isSupportedNode, MIN_NODE_MAJOR } from "../src/index.js";
 
 test("positional project name is captured", () => {
@@ -98,4 +101,19 @@ test("isSupportedNode enforces the Node 22+ floor", () => {
     assert.equal(isSupportedNode("20.20.2"), false);
     assert.equal(isSupportedNode("18.19.0"), false);
     assert.equal(isSupportedNode("garbage"), false);
+});
+
+test("writePnpmBuildConfig writes a valid single-decision workspace file", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "crs-pnpm-"));
+    try {
+        writePnpmBuildConfig(dir);
+        const out = fs.readFileSync(path.join(dir, "pnpm-workspace.yaml"), "utf8");
+
+        // Exactly one allowBuilds key (a duplicate would be invalid YAML).
+        assert.equal(out.match(/^allowBuilds:/gm)?.length, 1);
+        assert.match(out, /^strictDepBuilds: false$/m);
+        assert.match(out, /esbuild: false/);
+    } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+    }
 });
