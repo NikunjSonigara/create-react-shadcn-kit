@@ -67,14 +67,18 @@ export async function scaffold(config) {
     }
 }
 
-function aliasPrefix(importAlias) {
-    const i = importAlias.indexOf("/*");
-    return i === -1 ? importAlias : importAlias.slice(0, i);
+// Turn a tsconfig-style import alias pattern (e.g. "@/*", "~/*") into the
+// prefix used in import statements ("@", "~"). Falls back to "@" if empty.
+export function aliasPrefixFor(importAlias) {
+    const prefix = String(importAlias || "@/*")
+        .replace(/\*$/, "")
+        .replace(/\/$/, "");
+    return prefix || "@";
 }
 
 function writeViteConfig(projectPath, config) {
     const ts = config.typescript;
-    const alias = aliasPrefix(config.importAlias);
+    const alias = aliasPrefixFor(config.importAlias);
     const configFile = path.join(projectPath, ts ? "vite.config.ts" : "vite.config.js");
 
     const contents = ts
@@ -345,7 +349,7 @@ export const useCounterStore = create((set) => ({
 
 function patchMainWithProvider(srcDir, config) {
     const ts = config.typescript;
-    const alias = aliasPrefix(config.importAlias);
+    const alias = aliasPrefixFor(config.importAlias);
     const mainPath = path.join(srcDir, ts ? "main.tsx" : "main.jsx");
 
     if (!fs.existsSync(mainPath)) {

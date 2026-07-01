@@ -1,5 +1,10 @@
 import { spawn } from "node:child_process";
 
+// Flags that take a value via the space form (e.g. `--state redux`). Every
+// other `--flag` is treated as a boolean so it never swallows the following
+// positional argument (e.g. `--pnpm my-app` keeps "my-app" as the project name).
+const VALUE_FLAGS = new Set(["state"]);
+
 export function parseArgs(argv) {
     const positional = [];
     const flags = {};
@@ -13,7 +18,7 @@ export function parseArgs(argv) {
             } else {
                 const key = arg.slice(2);
                 const next = argv[i + 1];
-                if (next && !next.startsWith("-")) {
+                if (VALUE_FLAGS.has(key) && next !== undefined && !next.startsWith("-")) {
                     flags[key] = next;
                     i++;
                 } else {

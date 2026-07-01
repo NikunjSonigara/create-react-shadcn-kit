@@ -41,6 +41,7 @@
     },
     "scripts": {
         "start": "node bin/index.js",
+        "test": "node --test",
         "test:local": "node bin/index.js test-app --yes"
     },
     "dependencies": {
