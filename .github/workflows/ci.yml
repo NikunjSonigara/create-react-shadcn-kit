@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel superseded runs on the same ref to save CI minutes.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Fast unit tests across supported Node versions.
+  unit:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['22', '24']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm ci
+      - run: npm test
+
+  # End-to-end: scaffold a real app with each package manager and build it.
+  # This is what backs the README's "tested end-to-end" claim.
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        pm: [npm, pnpm, yarn, bun]
+    steps:
+      - uses: actions/checkout@v4
+      # Node 22: the generated app's toolchain now requires it — Vite 7 needs
+      # Node 20.19+/22.12+, and lint-staged pulls in listr2, which requires
+      # Node >=22.13 (Yarn Classic enforces this strictly).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Enable pnpm
+        if: matrix.pm == 'pnpm'
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - name: Enable bun
+        if: matrix.pm == 'bun'
+        uses: oven-sh/setup-bun@v2
+
+      # CI runners have no global git identity. Husky's setup git-inits the
+      # scaffolded project when it isn't already a repo; configure an identity
+      # first so nothing downstream trips over a missing one.
+      - name: Configure git identity
+        run: |
+          git config --global user.email "ci@example.com"
+          git config --global user.name "CI"
+
+      # Install the CLI's own dependencies.
+      - run: npm ci
+
+      # Scaffold in a fresh dir OUTSIDE the checkout so the generated project is
+      # its own git repository (mirrors real-world usage).
+      - name: Scaffold app
+        working-directory: ${{ runner.temp }}
+        # pnpm 11 defaults strictDepBuilds=true, so dependency build scripts that
+        # aren't approved (e.g. esbuild via Vite) become a hard error in the
+        # non-interactive scaffold. Downgrade it back to a warning.
+        env:
+          pnpm_config_strict_dep_builds: "false"
+        run: node "$GITHUB_WORKSPACE/bin/index.js" demo-app --yes --${{ matrix.pm }}
+
+      # Prove the generated project compiles and builds.
+      - name: Build generated app
+        working-directory: ${{ runner.temp }}/demo-app
+        run: ${{ matrix.pm }} run build

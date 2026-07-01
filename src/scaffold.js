@@ -7,6 +7,14 @@ export async function scaffold(config) {
     const cwd = process.cwd();
     const projectPath = path.resolve(cwd, config.projectName);
 
+    // pnpm 10+/11 defaults strictDepBuilds=true, so unapproved dependency build
+    // scripts (e.g. esbuild pulled in by Vite) abort the install in a
+    // non-interactive run. Downgrade it to a warning for all child pnpm
+    // processes; respect an explicit override if the user already set one.
+    if (config.packageManager === "pnpm" && process.env.pnpm_config_strict_dep_builds === undefined) {
+        process.env.pnpm_config_strict_dep_builds = "false";
+    }
+
     if (fs.existsSync(projectPath) && fs.readdirSync(projectPath).length > 0) {
         throw new Error(`Directory "${config.projectName}" already exists and is not empty.`);
     }
