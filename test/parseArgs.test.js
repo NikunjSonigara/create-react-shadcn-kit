@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { parseArgs, isValidProjectName } from "../src/utils.js";
 import { aliasPrefixFor } from "../src/scaffold.js";
+import { isSupportedNode, MIN_NODE_MAJOR } from "../src/index.js";
 
 test("positional project name is captured", () => {
     assert.equal(parseArgs(["my-app"]).projectName, "my-app");
@@ -87,4 +88,14 @@ test("aliasPrefixFor derives the import prefix", () => {
     assert.equal(aliasPrefixFor("@/"), "@");
     assert.equal(aliasPrefixFor(""), "@");
     assert.equal(aliasPrefixFor(undefined), "@");
+});
+
+test("isSupportedNode enforces the Node 22+ floor", () => {
+    assert.equal(MIN_NODE_MAJOR, 22);
+    assert.equal(isSupportedNode("22.0.0"), true);
+    assert.equal(isSupportedNode("24.1.0"), true);
+    assert.equal(isSupportedNode("v22.13.0"), true);
+    assert.equal(isSupportedNode("20.20.2"), false);
+    assert.equal(isSupportedNode("18.19.0"), false);
+    assert.equal(isSupportedNode("garbage"), false);
 });

@@ -59,7 +59,7 @@ npx create-react-shadcn-kit my-app --pnpm
 
 ## Requirements
 
-- Node.js **18.17+**
+- Node.js **22+** (Vite 7 and the pnpm/lint-staged toolchain require it)
 - Network access (to fetch `create-vite` and `shadcn`)
 
 ## Development
