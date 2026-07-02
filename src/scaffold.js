@@ -27,6 +27,12 @@ export async function scaffold(config) {
 
     await run("npx", ["--yes", "create-vite@latest", config.projectName, "--template", template, "--no-interactive"]);
 
+    // Persist the pnpm build-script decision before installing, so both this
+    // install and the end user's later `pnpm install` succeed (see the function).
+    if (config.packageManager === "pnpm") {
+        writePnpmBuildConfig(projectPath);
+    }
+
     console.log();
     console.log(pc.cyan("◆") + " Installing dependencies...");
     console.log();
@@ -73,6 +79,28 @@ export async function scaffold(config) {
     if (config.husky) {
         await setupHusky(projectPath, config);
     }
+}
+
+// pnpm 11 defaults strictDepBuilds=true, so a later `pnpm install` in the
+// generated project hard-fails (ERR_PNPM_IGNORED_BUILDS) on unapproved
+// dependency build scripts that Vite pulls in (esbuild). Unlike create-next-app,
+// create-vite leaves no pnpm-workspace.yaml behind, so we write one with an
+// explicit decision:
+//   - allowBuilds: esbuild: false -> a deliberate "don't run this build script"
+//     (esbuild's platform binary ships via its optional dependency, so nothing
+//     untrusted needs to execute at install time).
+//   - strictDepBuilds: false       -> catch-all so a future native dependency
+//     can't reintroduce the hard install failure.
+// pnpm 11 reads these from pnpm-workspace.yaml, not .npmrc.
+export function writePnpmBuildConfig(projectPath) {
+    const wsPath = path.join(projectPath, "pnpm-workspace.yaml");
+    const contents = `# Let \`pnpm install\` succeed without failing on dependency build scripts.
+# See https://pnpm.io/settings#strictdepbuilds
+strictDepBuilds: false
+allowBuilds:
+  esbuild: false
+`;
+    fs.writeFileSync(wsPath, contents);
 }
 
 // Turn a tsconfig-style import alias pattern (e.g. "@/*", "~/*") into the
