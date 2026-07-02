@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { parseArgs, isValidProjectName } from "../src/utils.js";
-import { aliasPrefixFor, writePnpmBuildConfig } from "../src/scaffold.js";
+import { aliasPrefixFor, writePnpmBuildConfig, readTemplate } from "../src/scaffold.js";
 import { isSupportedNode, MIN_NODE_MAJOR } from "../src/index.js";
 
 test("positional project name is captured", () => {
@@ -101,6 +101,52 @@ test("isSupportedNode enforces the Node 22+ floor", () => {
     assert.equal(isSupportedNode("20.20.2"), false);
     assert.equal(isSupportedNode("18.19.0"), false);
     assert.equal(isSupportedNode("garbage"), false);
+});
+
+test("readTemplate returns the TS/JS Redux templates", () => {
+    const indexTs = readTemplate("redux", "index.ts");
+    assert.match(indexTs, /configureStore/);
+    assert.match(indexTs, /export type RootState/);
+
+    const indexJs = readTemplate("redux", "index.js");
+    assert.match(indexJs, /configureStore/);
+    assert.doesNotMatch(indexJs, /RootState/); // JS variant has no type exports
+});
+
+test("redux counterSlice templates ship the async thunk", () => {
+    assert.match(readTemplate("redux", "counterSlice.ts"), /createAsyncThunk/);
+    const js = readTemplate("redux", "counterSlice.js");
+    assert.match(js, /createAsyncThunk/);
+    assert.doesNotMatch(js, /PayloadAction/); // JS variant has no type imports
+});
+
+test("readTemplate returns the TS/JS Zustand store", () => {
+    assert.match(readTemplate("zustand", "useCounterStore.ts"), /create<CounterState>/);
+    const js = readTemplate("zustand", "useCounterStore.js");
+    assert.match(js, /export const useCounterStore = create\(/);
+    assert.doesNotMatch(js, /CounterState/); // JS variant has no interface
+});
+
+test("husky config templates match the previous inline output byte-for-byte", () => {
+    const prettierrc =
+        JSON.stringify(
+            { semi: true, singleQuote: false, tabWidth: 2, trailingComma: "es5", printWidth: 100, arrowParens: "always", endOfLine: "lf" },
+            null,
+            2
+        ) + "\n";
+    assert.equal(readTemplate("husky", "prettierrc.json"), prettierrc);
+
+    const prettierignore =
+        ["node_modules", "dist", "build", "coverage", "package-lock.json", "pnpm-lock.yaml", "yarn.lock", "bun.lock", "bun.lockb", ""].join("\n");
+    assert.equal(readTemplate("husky", "prettierignore"), prettierignore);
+
+    // pre-commit carries a single __HOOK_CMD__ placeholder.
+    const preCommit = readTemplate("husky", "pre-commit");
+    assert.equal(preCommit.match(/__HOOK_CMD__/g)?.length, 1);
+    assert.equal(
+        preCommit.replace("__HOOK_CMD__", "npx lint-staged"),
+        `#!/usr/bin/env sh\n. "$(dirname -- "$0")/_/husky.sh"\n\nnpx lint-staged\n`
+    );
 });
 
 test("writePnpmBuildConfig writes a valid single-decision workspace file", () => {
