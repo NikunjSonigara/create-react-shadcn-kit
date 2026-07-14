@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-07-14
+
 ### Added
 
 - **Scaffolded projects now start with an initial git commit.** After setup
