@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Scaffolded projects now start with an initial git commit.** After setup
+  completes, the generated project is committed (`setup the project with the
+  create-react-shadcn-kit`) so it begins from a clean, tracked baseline. The
+  commit runs with `--no-verify` so the freshly-installed pre-commit hook can't
+  block it, and is best-effort — if no git identity is configured it is skipped
+  with a warning instead of failing the scaffold.
+
 ### Fixed
 
 - **yarn scaffolds no longer abort at the Husky step.** `lint-staged`'s latest

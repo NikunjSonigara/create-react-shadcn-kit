@@ -88,6 +88,59 @@ export async function scaffold(config) {
     if (config.husky) {
         await setupHusky(projectPath, config);
     }
+
+    await createInitialCommit(projectPath, config);
+}
+
+// Compose the initial-commit message, describing what the scaffold actually set
+// up (language, styling, state management, hooks, components) so the project's
+// first commit is self-documenting. The exact lines depend on the chosen config.
+export function initialCommitMessage(config) {
+    const lines = [
+        `- Vite + React (${config.typescript ? "TypeScript" : "JavaScript"})`,
+        "- Tailwind CSS + shadcn/ui",
+    ];
+
+    if (config.state === "redux") lines.push("- Redux Toolkit state management");
+    else if (config.state === "zustand") lines.push("- Zustand state management");
+
+    if (config.husky) lines.push("- Husky + lint-staged + Prettier pre-commit hooks");
+
+    if (config.components?.length) lines.push(`- shadcn/ui components: ${config.components.join(", ")}`);
+
+    return (
+        "setup the project with the create-react-shadcn-kit\n\n" +
+        lines.join("\n") +
+        "\n\n" +
+        "Co-authored-by: Nikunj Sonigara <nikunjsonigara987@gmail.com>"
+    );
+}
+
+// Make an initial commit so the generated project starts from a clean, tracked
+// baseline. Runs last so the whole scaffold (including any .husky/ hook files) is
+// captured. Best-effort: git commit fails if the user has no git identity
+// configured, so we warn and continue rather than abort an otherwise-successful
+// scaffold. --no-verify skips the freshly-installed pre-commit hook so the
+// baseline commit can't be blocked (or slowed) by lint-staged/tsc.
+async function createInitialCommit(projectPath, config) {
+    console.log();
+    console.log(pc.cyan("◆") + " Creating initial commit...");
+    console.log();
+
+    const gitDir = path.join(projectPath, ".git");
+    if (!fs.existsSync(gitDir)) {
+        await run("git", ["init"], { cwd: projectPath });
+    }
+
+    try {
+        await run("git", ["add", "-A"], { cwd: projectPath });
+        await run("git", ["commit", "--no-verify", "-m", initialCommitMessage(config)], { cwd: projectPath });
+    } catch {
+        console.log(
+            pc.yellow("⚠") +
+                " Skipped the initial commit — configure git user.name and user.email, then commit manually."
+        );
+    }
 }
 
 // pnpm 11 defaults strictDepBuilds=true, so a later `pnpm install` in the
