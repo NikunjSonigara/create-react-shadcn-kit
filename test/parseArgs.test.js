@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { parseArgs, isValidProjectName } from "../src/utils.js";
-import { aliasPrefixFor, writePnpmBuildConfig, readTemplate } from "../src/scaffold.js";
+import { aliasPrefixFor, writePnpmBuildConfig, readTemplate, initialCommitMessage } from "../src/scaffold.js";
 import { isSupportedNode, MIN_NODE_MAJOR } from "../src/index.js";
 
 test("positional project name is captured", () => {
@@ -38,6 +38,32 @@ test("typescript / javascript flags", () => {
 test("--no-husky disables husky", () => {
     assert.equal(parseArgs(["--no-husky"]).husky, false);
     assert.equal(parseArgs([]).husky, undefined);
+});
+
+test("initialCommitMessage summarizes the chosen config and carries the co-author trailer", () => {
+    const msg = initialCommitMessage({
+        typescript: true,
+        state: "redux",
+        husky: true,
+        components: ["button", "card"],
+    });
+    assert.match(msg, /^setup the project with the create-react-shadcn-kit\n/);
+    assert.match(msg, /- Vite \+ React \(TypeScript\)/);
+    assert.match(msg, /- Tailwind CSS \+ shadcn\/ui/);
+    assert.match(msg, /- Redux Toolkit state management/);
+    assert.match(msg, /- Husky \+ lint-staged \+ Prettier pre-commit hooks/);
+    assert.match(msg, /- shadcn\/ui components: button, card/);
+    // Trailer must be the last block, preceded by a blank line, so git parses it.
+    assert.match(msg, /\n\nCo-authored-by: Nikunj Sonigara <nikunjsonigara987@gmail.com>$/);
+});
+
+test("initialCommitMessage omits optional lines for a minimal config", () => {
+    const msg = initialCommitMessage({ typescript: false, state: "none", husky: false, components: [] });
+    assert.match(msg, /- Vite \+ React \(JavaScript\)/);
+    assert.doesNotMatch(msg, /state management/);
+    assert.doesNotMatch(msg, /pre-commit hooks/);
+    assert.doesNotMatch(msg, /components:/);
+    assert.match(msg, /\n\nCo-authored-by: Nikunj Sonigara <nikunjsonigara987@gmail.com>$/);
 });
 
 test("--state accepts both = and space forms, rejects unknown values", () => {

@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Scaffolded projects now start with an initial git commit.** After setup
+  completes, the generated project is committed (`setup the project with the
+  create-react-shadcn-kit`) so it begins from a clean, tracked baseline. The
+  commit runs with `--no-verify` so the freshly-installed pre-commit hook can't
+  block it, and is best-effort — if no git identity is configured it is skipped
+  with a warning instead of failing the scaffold.
+
+### Fixed
+
+- **yarn scaffolds no longer abort at the Husky step.** `lint-staged`'s latest
+  major (17) requires Node ≥22.22.1 — above this kit's declared floor
+  (Node ≥22.0.0). npm, pnpm, and bun only warn on that `engines` mismatch and
+  install it anyway, but Yarn Classic treats it as a hard error and aborts the
+  install (`error lint-staged@17.0.8: The engine "node" is incompatible with
+  this module. Expected version ">=22.22.1"`). `lint-staged` is now pinned to
+  `^16` (needs only Node ≥20.17), so the installed toolchain matches the
+  supported Node range for every package manager — not just yarn. Yarn installs
+  additionally pass `--ignore-engines` so Yarn Classic's strict engine checking
+  can't spuriously abort the scaffold on a Node range the kit already supports.
+
 ### Changed
 
 - **Internal refactor (no behavior change):** the Redux, Zustand, and
