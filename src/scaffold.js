@@ -284,9 +284,14 @@ async function setupHusky(projectPath, config) {
     console.log();
 
     const installer = installerFor(config.packageManager, true);
+    // Pin lint-staged to ^16: its latest major (17) requires Node >=22.22.1,
+    // which is above this kit's declared Node floor (>=22.0.0). npm/pnpm/bun
+    // only warn on that engine mismatch and install it anyway, leaving the
+    // pre-commit hook on an unsupported Node; yarn classic aborts outright.
+    // ^16 needs only Node >=20.17, so it works across every supported version.
     await run(
         installer.cmd,
-        [...installer.args, "husky@^8", "lint-staged", "prettier"],
+        [...installer.args, "husky@^8", "lint-staged@^16", "prettier"],
         { cwd: projectPath }
     );
 
@@ -355,7 +360,12 @@ function installerFor(pm, dev = true) {
         case "pnpm":
             return { cmd: "pnpm", args: dev ? ["add", "-D"] : ["add"] };
         case "yarn":
-            return { cmd: "yarn", args: dev ? ["add", "-D"] : ["add"] };
+            // yarn classic (v1) treats an `engines` mismatch on any dependency
+            // (direct or transitive) as a hard error and aborts the install,
+            // whereas npm/pnpm/bun only warn. --ignore-engines aligns yarn with
+            // the others so the scaffold doesn't spuriously fail on a Node range
+            // the kit already declares as supported.
+            return { cmd: "yarn", args: dev ? ["add", "-D", "--ignore-engines"] : ["add", "--ignore-engines"] };
         case "bun":
             return { cmd: "bun", args: dev ? ["add", "-d"] : ["add"] };
         case "npm":
